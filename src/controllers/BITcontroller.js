@@ -1,50 +1,58 @@
 const express = require('express');
 const router = express.Router();
 
-const { getCurrentData, getHistoricalData } = require('../models/BITmodel');
+const { getData } = require('../models/BITmodel');
 
 const STATUS_USER_ERROR = 422;
 
-let currentPrice = 0;
-let currentPriceTime;
-let previousPrice = 0;
-let previousPriceTime;
-let differenceBetweenValues = 0;
+const CURRENT_REQUEST = 'https://api.coindesk.com/v1/bpi/currentprice.json';
+const HISTORY_REQUEST = 'https://api.coindesk.com/v1/bpi/historical/close.json?for=yesterday';
 
 router.get('/compare', (req, res) => {
-  if (!currentPrice) {
-    getCurrentData()
-      .then(data => {
-        currentPrice = data.bpi.USD.rate_float;
-        currentPriceTime = data.time.updated;
-        res.send({
-          currentDayInformation: {
-            currentDayValue: currentPrice,
-            timeOfValue: currentPriceTime,
-          },
-        });
-      })
-      .catch(err => console.log('There was an error: ', err));
-  } else {
-    getHistoricalData()
-      .then(data => {
-        previousPrice = Object.values(data.bpi)[0];
-        previousPriceTime = data.time.updated;
-        differenceBetweenValues = currentPrice - previousPrice;
-        res.send({
-          previousDayInformation: {
-            previousDayValue: previousPrice,
-            timeOfValue: previousPriceTime,
-          },
-          currentDayInformation: {
-            currentDayValue: currentPrice,
-            timeOfValue: currentPriceTime,
-          },
-          priceDifference: differenceBetweenValues,
-        });
-      })
-      .catch(err => console.log('There was an error: ', err));
-  }
+  const currentRequest = getData(CURRENT_REQUEST)
+    .then(data => {
+      return {
+        currentDayInformation: {
+          currentDayValue: data.bpi.USD.rate_float,
+          timeOfValue: data.time.updated,
+        },
+      };
+    })
+    .catch(err => console.log('There was an error: ', err));
+
+  const historyRequest = getData(HISTORY_REQUEST)
+    .then(data => {
+      return {
+        previousDayInformation: {
+          previousDayValue: Object.values(data.bpi)[0],
+          timeOfValue: data.time.updated,
+        },
+      };
+    })
+    .catch(err => console.log('There was an error: ', err));
+
+  return Promise.all([currentRequest, historyRequest])
+    .then(currencyInfo => {
+      const difference =
+        currencyInfo[0].currentDayInformation.currentDayValue -
+        currencyInfo[1].previousDayInformation.previousDayValue;
+
+      const sign = Math.sign(difference);
+      let response;
+      if (sign === 1) response = 'increased by $';
+      if (sign === 0) response = 'not changed, the difference is $';
+      if (sign === -1) response = 'decreased by $';
+
+      res.send({
+        ...currencyInfo[1],
+        ...currencyInfo[0],
+        differenceInformation: {
+          differenceValue: difference,
+          differenceString: `The price has ${response}${difference}`,
+        },
+      });
+    })
+    .catch(err => console.log('There was an error: ', err));
 });
 
 router.get('*', (req, res) => {
