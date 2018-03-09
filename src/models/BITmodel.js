@@ -8,7 +8,7 @@ const CURRENT_REQUEST = 'https://api.coindesk.com/v1/bpi/currentprice.json';
 const HISTORY_REQUEST = 'https://api.coindesk.com/v1/bpi/historical/close.json';
 //https://api.coindesk.com/v1/bpi/historical/close.json
 
-const getCurrentPrice = () => {
+const getCurrentData = () => {
   return new Promise((resolve, reject) => {
     fetch('https://api.coindesk.com/v1/bpi/currentprice.json')
       .then(res => res.json())
@@ -17,7 +17,7 @@ const getCurrentPrice = () => {
   });
 };
 
-const getHistoricalPrice = () => {
+const getHistoricalData = () => {
   return new Promise((resolve, reject) => {
     fetch('https://api.coindesk.com/v1/bpi/historical/close.json?for=yesterday')
       .then(res => res.json())
@@ -27,6 +27,6 @@ const getHistoricalPrice = () => {
 };
 
 module.exports = {
-  getCurrentPrice,
-  getHistoricalPrice
+  getCurrentData,
+  getHistoricalData
 };

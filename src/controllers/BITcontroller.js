@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 
-const { getCurrentPrice, getHistoricalPrice } = require('../models/BITmodel');
+const { getCurrentData, getHistoricalData } = require('../models/BITmodel');
 
 const STATUS_USER_ERROR = 422;
 
@@ -13,7 +13,7 @@ let differenceBetweenValues = 0;
 
 router.get('/compare', (req, res) => {
   if (!currentPrice) {
-    getCurrentPrice()
+    getCurrentData()
       .then(data => {
         currentPrice = data.bpi.USD.rate_float;
         currentPriceTime = data.time.updated;
@@ -26,7 +26,7 @@ router.get('/compare', (req, res) => {
       })
       .catch(err => console.log('There was an error: ', err));
   } else {
-    getHistoricalPrice()
+    getHistoricalData()
       .then(data => {
         previousPrice = Object.values(data.bpi)[0];
         previousPriceTime = data.time.updated;
@@ -49,7 +49,7 @@ router.get('/compare', (req, res) => {
 
 router.get('*', (req, res) => {
   res.status(STATUS_USER_ERROR);
-  res.send("Page not found");
+  res.send('Page not found');
 });
 
 module.exports = router;
